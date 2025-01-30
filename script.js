@@ -1,3 +1,40 @@
+function xmlToJson(xml) {
+  let obj = {};
+
+  if (xml.nodeType === 1) {
+    // Element node
+    if (xml.attributes.length > 0) {
+      obj["@attributes"] = {};
+      for (let attr of xml.attributes) {
+        obj["@attributes"][attr.nodeName] = attr.nodeValue;
+      }
+    }
+  } else if (xml.nodeType === 3) {
+    // Text node
+    return xml.nodeValue.trim();
+  }
+
+  if (xml.hasChildNodes()) {
+    for (let child of xml.childNodes) {
+      let nodeName = child.nodeName;
+      let childData = xmlToJson(child);
+
+      if (child.nodeType === 3 && !childData) continue; // Skip empty text nodes
+
+      if (obj[nodeName] === undefined) {
+        obj[nodeName] = childData;
+      } else {
+        if (!Array.isArray(obj[nodeName])) {
+          obj[nodeName] = [obj[nodeName]];
+        }
+        obj[nodeName].push(childData);
+      }
+    }
+  }
+
+  return obj;
+}
+
 const rssForm = document.getElementById("rss-form");
 const rssInput = document.getElementById("rss-url");
 const rssList = document.getElementById("rss-list");
@@ -9,6 +46,41 @@ function loadRSSUrls() {
   return JSON.parse(localStorage.getItem("rssUrls")) || [];
 }
 
+async function fetchFeed(rss_url) {
+  try {
+    const response = await fetch(
+      `${apiUrl}?rss_url=${encodeURIComponent(rss_url)}`
+    );
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return data;
+  } catch (error) {
+    console.error(error, "; Attempting XML parsing");
+
+    const response = await fetch(rss_url);
+    const data = await response.text();
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(data, "text/xml");
+    const jsonResult = xmlToJson(xmlDoc.documentElement);
+
+    return {
+      feed: {
+        title: jsonResult.channel.title["#text"],
+      },
+      items: jsonResult.channel.item.map((i) => ({
+        title: i.title["#text"],
+        link: i.link["#text"],
+        pubDate: i.pubDate["#text"],
+        enclosure: { link: i["media:content"]["@attributes"]["url"] },
+      })),
+    };
+  }
+}
+
 async function loadFeeds(rssFeeds) {
   feedItems.innerHTML = "<li>Loading feed...</li>";
 
@@ -16,11 +88,9 @@ async function loadFeeds(rssFeeds) {
     rssFeeds.map(async (feed) => {
       let feedCards = [];
       try {
-        const response = await fetch(
-          `${apiUrl}?rss_url=${encodeURIComponent(feed.url)}`
-        );
-        const data = await response.json();
-        const items = data.items;
+        const data = await fetchFeed(feed.url);
+        const items = data.items.slice(0, 10);
+        // TODO: make limit configurable
 
         feedItems.innerHTML = "";
         items.forEach((item) => {
@@ -61,6 +131,7 @@ async function loadFeeds(rssFeeds) {
           feedCards.push({ card: card, pubDate: new Date(item.pubDate) });
         });
       } catch (error) {
+        console.log(error);
         feedItems.innerHTML = "<li>Error loading feed.</li>";
       }
 
@@ -122,11 +193,12 @@ document.addEventListener("DOMContentLoaded", () => {
   rssForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const rssUrl = rssInput.value.trim();
-    const response = await fetch(
-      `${apiUrl}?rss_url=${encodeURIComponent(rssUrl)}`
-    );
+    // const response = await fetch(
+    //   `${apiUrl}?rss_url=${encodeURIComponent(rssUrl)}`
+    // );
 
-    const data = await response.json();
+    // const data = await response.json();
+    const data = await fetchFeed(rssUrl);
     const rsstitle = data.feed.title;
 
     if (rssUrl) {
@@ -153,3 +225,24 @@ window.onload = function () {
 
   loadFeeds(rssFeeds);
 };
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   document
+//     .getElementById("storyModal")
+//     .addEventListener("show.bs.modal", (event) => {
+//       const link = event.relatedTarget;
+//       const url = link.getAttribute("data-bs-url");
+//       const iframe = document.getElementById("modal-iframe");
+
+//       if (url) {
+//         iframe.src = url; // Set iframe src
+//         iframe.style.height = `${window.innerHeight * 0.9}px`;
+//       }
+//     });
+
+//   document
+//     .getElementById("storyModal")
+//     .addEventListener("hidden.bs.modal", () => {
+//       document.getElementById("modal-iframe").src = "";
+//     });
+// });

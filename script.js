@@ -112,11 +112,12 @@ async function loadFeeds(rssFeeds) {
           card.className = "card rounded-0 m-1 border-0";
           card.style = "max-width: 11rem;";
           card.innerHTML = `
-                ${
+                <div class="img-container">${
                   img
                     ? `<img src="${img}" class="card-img-top rounded-0" alt="...">`
                     : ""
-                }    
+                }
+                </div>    
                 <div class="card-body p-2">
                 
                 <h5>

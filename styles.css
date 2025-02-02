@@ -1,12 +1,4 @@
 /* General Styles */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #454545;
-    overflow-x: hidden;
-}
-
 h1,
 h2 {
     margin: 0 0 10px;
@@ -14,7 +6,7 @@ h2 {
 }
 
 .navbar {
-    background: rgba(12,52,88, 0.9);
+    background: rgba(20,66,100, 0.9);
     backdrop-filter: blur(8px);
 }
 
@@ -35,3 +27,9 @@ h2 {
     object-fit: cover;
     object-position: top;
 }
+
+/* .headlines {
+    font-family: "Cormorant Garamond", serif;
+        font-weight: 700;
+        font-style: normal;
+} */

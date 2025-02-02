@@ -35,6 +35,8 @@ function xmlToJson(xml) {
   return obj;
 }
 
+const feedColor = "#dfdfdf";
+
 const rssForm = document.getElementById("rss-form");
 const rssInput = document.getElementById("rss-url");
 const rssList = document.getElementById("rss-list");
@@ -109,26 +111,27 @@ async function loadFeeds(rssFeeds) {
 
           // Create a card for each article
           const card = document.createElement("div");
-          card.className = "card rounded-0 m-1 border-0";
-          card.style = "max-width: 11rem;";
+          card.className = "col d-flex align-items-stretch";
           card.innerHTML = `
-                <div class="img-container">${
-                  img
-                    ? `<img src="${img}" class="card-img-top rounded-0" alt="...">`
-                    : ""
-                }
-                </div>    
-                <div class="card-body p-2">
-                
-                <h5>
-                  <a href="${link}" class="link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${title}</a>
-                </h5>
-                <p class="card-subtitle text-body-secondary" style="font-size: small;">${pubDate}</p>
-                <div class="fw-light position-absolute bottom-0 end-0 px-3 bg-light" style="font-size: small;">
-                  ${feed.title}
+                <div class="card rounded-0 m-1 border-0 bg-white">
+                  <div class="img-container">${
+                    img
+                      ? `<img src="${img}" class="card-img-top rounded-0" alt="...">`
+                      : ""
+                  }
+                  </div>    
+                  <div class="card-body p-2">
+                    <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${title}</a>
+                    <p class="card-subtitle text-body-secondary py-2" style="font-size: small;">${pubDate}</p>
+                  </div>
+                  <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${feedColor};">
+                      <div class="px-3 fw-light position-absolute bottom-0 end-0" style="font-size: small; background: ${feedColor}; color: black;">
+                        ${feed.title}
+                      </div>
+                  </div>
                 </div>
-              </div>
             `;
+          // bg-body border-bottom border-light-subtle rounded-0
           feedCards.push({ card: card, pubDate: new Date(item.pubDate) });
         });
       } catch (error) {

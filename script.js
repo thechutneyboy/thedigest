@@ -48,6 +48,10 @@ function loadRSSUrls() {
   return JSON.parse(localStorage.getItem("rssUrls")) || [];
 }
 
+function saveRSSUrls(rssUrls) {
+  return localStorage.setItem("rssUrls", JSON.stringify(rssUrls));
+}
+
 async function fetchFeed(rss_url) {
   try {
     const response = await fetch(
@@ -150,103 +154,101 @@ async function loadFeeds(rssFeeds) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Save RSS URLs to localStorage
-  const saveRSSUrls = (rssUrls) => {
-    localStorage.setItem("rssUrls", JSON.stringify(rssUrls));
-  };
+function renderSidebar() {
+  const rssUrls = loadRSSUrls();
+  rssList.innerHTML = "";
 
-  // Render saved RSS URLs in the sidebar
-  const renderRSSUrls = () => {
-    const rssUrls = loadRSSUrls();
-    rssList.innerHTML = "";
+  console.log(rssUrls);
+  rssUrls.sort((a, b) => a.title.localeCompare(b.title));
+  rssUrls.forEach((rss, index) => {
+    const item = document.createElement("li");
+    item.className = "list-group-item p-2";
+    item.innerHTML = `
+      <a href="#" class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">${
+        rss.title
+      }</a>
+      <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}"></i>
+      <div class="collapse bg-light" id="collapse${index}">
+        <div class="d-flex justify-content-around">
+          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit RSS feed">
+            <i class="bi bi-pencil-square" style="color: grey;"></i>
+          </button>
+          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
+            <i class="bi bi-copy" style="color: grey;"></i>
+          </button>
+          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Visit Website">
+            <a href="${rss.website || rss.url}" target="_blank">
+              <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
+            </a>
+          </button>
+          <button type="button" class="btn btn-light">
+            <i class="bi bi-trash" style="color: red;"></i>
+          </button>
+        </div>
+      </div>
+      `;
 
-    rssUrls.forEach((rss, index) => {
-      const li = document.createElement("li");
-      li.className = "list-group-item p-1";
-      const link = document.createElement("a");
-      link.className =
-        "link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover";
-      link.href = "#";
-      link.textContent = rss.title;
-      link.addEventListener("click", () => loadFeeds([rss]));
-      const removeBtn = document.createElement("i");
-      removeBtn.className = "bi bi-trash";
-      removeBtn.style.float = "right";
-      removeBtn.style.color = "grey";
-      removeBtn.style.cursor = "pointer";
-      removeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        removeRSS(index);
-      });
-      li.appendChild(link);
-      li.appendChild(removeBtn);
-      rssList.appendChild(li);
+    const feed = item.querySelector("a");
+    feed.addEventListener("click", () => loadFeeds([rss]));
+
+    const editBtn = item.querySelector(".bi-pencil-square");
+
+    const copyBtn = item.querySelector(".bi-copy");
+    copyBtn.addEventListener("click", (e) => {
+      navigator.clipboard.writeText(rss.url);
+      const toastLiveExample = document.getElementById("copyToast");
+      const toastBootstrap =
+        bootstrap.Toast.getOrCreateInstance(toastLiveExample);
+
+      toastBootstrap.show();
     });
-  };
 
-  // Remove an RSS URL
-  const removeRSS = (index) => {
-    const rssUrls = loadRSSUrls();
-    rssUrls.splice(index, 1);
-    saveRSSUrls(rssUrls);
-    renderRSSUrls();
-  };
+    const removeBtn = item.querySelector(".bi-trash");
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const rssUrls = loadRSSUrls();
+      const updatedRSSUrls = rssUrls.filter((item) => item.url !== rss.url);
+      saveRSSUrls(updatedRSSUrls);
+      renderSidebar();
+    });
+
+    rssList.appendChild(item);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  renderSidebar();
+
+  const rssFeeds = loadRSSUrls();
+  await loadFeeds(rssFeeds);
 
   // Handle form submission
   rssForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const rssUrl = rssInput.value.trim();
-    // const response = await fetch(
-    //   `${apiUrl}?rss_url=${encodeURIComponent(rssUrl)}`
-    // );
-
-    // const data = await response.json();
     const data = await fetchFeed(rssUrl);
     const rsstitle = data.feed.title;
+    const rssWebsite = data.feed.link;
 
     if (rssUrl) {
       const rssUrls = loadRSSUrls();
       console.log(rssUrls);
       if (!rssUrls.some((rss) => rss.url === rssUrl)) {
         const title = rsstitle; // Default to URL, replace with fetching title if needed
-        rssUrls.push({ url: rssUrl, title, paywall: false });
+        rssUrls.push({
+          url: rssUrl,
+          title,
+          paywall: false,
+          website: rssWebsite,
+          category: "Uncategorised",
+        });
         saveRSSUrls(rssUrls);
-        renderRSSUrls();
+        renderSidebar();
         rssInput.value = "";
       } else {
         alert("This RSS feed is already saved.");
       }
     }
   });
-
-  // Initial render
-  renderRSSUrls();
 });
-
-window.onload = function () {
-  const rssFeeds = loadRSSUrls();
-
-  loadFeeds(rssFeeds);
-};
-
-// document.addEventListener("DOMContentLoaded", () => {
-//   document
-//     .getElementById("storyModal")
-//     .addEventListener("show.bs.modal", (event) => {
-//       const link = event.relatedTarget;
-//       const url = link.getAttribute("data-bs-url");
-//       const iframe = document.getElementById("modal-iframe");
-
-//       if (url) {
-//         iframe.src = url; // Set iframe src
-//         iframe.style.height = `${window.innerHeight * 0.9}px`;
-//       }
-//     });
-
-//   document
-//     .getElementById("storyModal")
-//     .addEventListener("hidden.bs.modal", () => {
-//       document.getElementById("modal-iframe").src = "";
-//     });
-// });

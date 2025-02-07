@@ -1,40 +1,3 @@
-function xmlToJson(xml) {
-  let obj = {};
-
-  if (xml.nodeType === 1) {
-    // Element node
-    if (xml.attributes.length > 0) {
-      obj["@attributes"] = {};
-      for (let attr of xml.attributes) {
-        obj["@attributes"][attr.nodeName] = attr.nodeValue;
-      }
-    }
-  } else if (xml.nodeType === 3) {
-    // Text node
-    return xml.nodeValue.trim();
-  }
-
-  if (xml.hasChildNodes()) {
-    for (let child of xml.childNodes) {
-      let nodeName = child.nodeName;
-      let childData = xmlToJson(child);
-
-      if (child.nodeType === 3 && !childData) continue; // Skip empty text nodes
-
-      if (obj[nodeName] === undefined) {
-        obj[nodeName] = childData;
-      } else {
-        if (!Array.isArray(obj[nodeName])) {
-          obj[nodeName] = [obj[nodeName]];
-        }
-        obj[nodeName].push(childData);
-      }
-    }
-  }
-
-  return obj;
-}
-
 const feedColor = "#dfdfdf";
 
 const rssForm = document.getElementById("rss-form");
@@ -128,15 +91,23 @@ async function loadFeeds(rssFeeds) {
                     <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${title}</a>
                     <p class="card-subtitle text-body-secondary py-2" style="font-size: small;">${pubDate}</p>
                   </div>
-                  <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${feedColor};">
-                      <div class="px-3 fw-light position-absolute bottom-0 end-0" style="font-size: small; background: ${feedColor}; color: black;">
+                  <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${
+                    feed.color || feedColor
+                  };">
+                      <div class="px-3 fw-light position-absolute bottom-0 end-0" style="font-size: small; background: ${
+                        feed.color || feedColor
+                      }; color: ${getBestTextColor(feed.color || feedColor)};">
                         ${feed.title}
                       </div>
                   </div>
                 </div>
             `;
           // bg-body border-bottom border-light-subtle rounded-0
-          feedCards.push({ card: card, pubDate: new Date(item.pubDate) });
+          feedCards.push({
+            card: card,
+            pubDate: new Date(item.pubDate),
+            link: link,
+          });
         });
       } catch (error) {
         console.log(error);
@@ -149,13 +120,21 @@ async function loadFeeds(rssFeeds) {
 
   const cards = cardlist.flat();
   const sortedCards = cards.sort((a, b) => b.pubDate - a.pubDate);
-  sortedCards.forEach((c) => {
+  const uniqueCards = Object.values(
+    sortedCards.reduce((prev, curr) => {
+      prev[curr.link] = curr;
+      return prev;
+    }, {})
+  );
+
+  uniqueCards.forEach((c) => {
     feedItems.appendChild(c.card);
   });
 }
 
 function renderSidebar() {
   const rssUrls = loadRSSUrls();
+  const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
   rssList.innerHTML = "";
 
   console.log(rssUrls);
@@ -164,15 +143,22 @@ function renderSidebar() {
     const item = document.createElement("li");
     item.className = "list-group-item p-2";
     item.innerHTML = `
-      <a href="#" class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">${
-        rss.title
-      }</a>
-      <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}"></i>
+      <div class="d-flex justify-content-between">
+        <a href="#" class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
+          rss.title
+        }</a>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+        </div>
+        <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}"></i>
+      </div>
       <div class="collapse bg-light" id="collapse${index}">
         <div class="d-flex justify-content-around">
-          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit RSS feed">
-            <i class="bi bi-pencil-square" style="color: grey;"></i>
-          </button>
+          <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit Feed">
+            <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#feedDetails">
+              <i class="bi bi-pencil-square" style="color: grey;" ></i>
+            </button>
+          </div>
           <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
             <i class="bi bi-copy" style="color: grey;"></i>
           </button>
@@ -181,7 +167,7 @@ function renderSidebar() {
               <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
             </a>
           </button>
-          <button type="button" class="btn btn-light">
+          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove feed">
             <i class="bi bi-trash" style="color: red;"></i>
           </button>
         </div>
@@ -192,9 +178,102 @@ function renderSidebar() {
     feed.addEventListener("click", () => loadFeeds([rss]));
 
     const editBtn = item.querySelector(".bi-pencil-square");
+    editBtn.addEventListener("click", (e) => {
+      const modal = document.getElementById("feedDetailsBody");
+      modal.innerHTML = `
+      <form id="feedDetailsForm" class="row g-3">
+        <div class="mb-3">
+          <label for="rssTitle" class="form-label">Title</label>
+          <input type="text" class="form-control" id="rssTitle" value="${
+            rss.title
+          }">
+        </div>
+        <div class="mb-3">
+          <label for="rssUrl" class="form-label">XML URL</label>
+          <input type="text" class="form-control" id="rssUrl" value="${
+            rss.url
+          }" disabled>
+        </div>
+        <div class="mb-3">
+          <label for="rssWebsite" class="form-label">Website</label>
+          <input type="text" class="form-control" id="rssWebsite" value="${
+            rss.website || rss.url
+          }" disabled>
+        </div>
+        <div class="mb-3">
+          <label for="rssCategory" class="form-label">Category</label>
+          <input type="text" class="form-control" id="rssCategory" placeholder="" value="${
+            rss.category || ""
+          }">
+        </div>
+        <div class="mb-3">
+          <label for="rssColorBg" class="form-label">Label Color</label>
+          <input type="color" class="form-control form-control-color" id="rssColorBg" value="${
+            rss.color || feedColor
+          }">
+        </div>
+        <div class="row d-flex justify-content-center">
+          <div id="labelBorderPreview" class="col-6 m-3 p-2 bg-white rounded-0 position-relative" style="border:none; border-bottom: 1px solid ${
+            rss.color || feedColor
+          };">
+            <div id="labelPreview" class="px-3 position-absolute bottom-0 end-0" style="font-size: small; background: ${
+              rss.color || feedColor
+            }; color: ${getBestTextColor(rss.color || feedColor)};">
+                ${rss.title}
+            </div>
+          </div>
+        </div>
+        <div class="row d-flex justify-content-center">
+          <button id="saveFeedDetails" type="submit" class="btn btn-primary col-3 " disabled>Save</button>
+        </div>
+      </form>
+      `;
+
+      const titleInput = document.getElementById("rssTitle");
+      const bgColorInput = document.getElementById("rssColorBg");
+      const labelBorderPreview = document.getElementById("labelBorderPreview");
+      const labelPreview = document.getElementById("labelPreview");
+
+      titleInput.addEventListener("input", () => {
+        labelPreview.innerHTML = titleInput.value;
+      });
+      bgColorInput.addEventListener("input", () => {
+        labelPreview.style.Color = getBestTextColor(bgColorInput.value);
+        labelPreview.style.backgroundColor = bgColorInput.value;
+        labelBorderPreview.style.borderBottomColor = bgColorInput.value;
+      });
+
+      const form = document.getElementById("feedDetailsForm");
+      const saveBtn = document.getElementById("saveFeedDetails");
+
+      form.addEventListener("input", (e) => {
+        e.stopImmediatePropagation();
+        saveBtn.disabled = false;
+      });
+
+      saveBtn.addEventListener("click", (e) => {
+        console.log("Saving feed details");
+        console.log(rss);
+
+        rss.title = titleInput.value;
+        rss.category = rssCategory.value;
+        rss.color = bgColorInput.value;
+
+        //closemodal
+        //render page
+        rssUrlsMap.delete(rss.url);
+        rssUrlsMap.set(rss.url, rss);
+        const updatedRSSUrls = Array.from(rssUrlsMap.values());
+
+        saveRSSUrls(updatedRSSUrls);
+        renderSidebar();
+      });
+    });
 
     const copyBtn = item.querySelector(".bi-copy");
     copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
       navigator.clipboard.writeText(rss.url);
       const toastLiveExample = document.getElementById("copyToast");
       const toastBootstrap =
@@ -207,8 +286,9 @@ function renderSidebar() {
     removeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
 
-      const rssUrls = loadRSSUrls();
-      const updatedRSSUrls = rssUrls.filter((item) => item.url !== rss.url);
+      rssUrlsMap.delete(rss.url);
+      const updatedRSSUrls = Array.from(rssUrlsMap.values());
+
       saveRSSUrls(updatedRSSUrls);
       renderSidebar();
     });
@@ -235,13 +315,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       const rssUrls = loadRSSUrls();
       console.log(rssUrls);
       if (!rssUrls.some((rss) => rss.url === rssUrl)) {
-        const title = rsstitle; // Default to URL, replace with fetching title if needed
+        const title = rsstitle;
         rssUrls.push({
           url: rssUrl,
           title,
           paywall: false,
           website: rssWebsite,
-          category: "Uncategorised",
+          category: "",
+          color: feedColor,
         });
         saveRSSUrls(rssUrls);
         renderSidebar();
@@ -251,4 +332,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
   });
+
+  const tooltipTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="tooltip"]'
+  );
+  const tooltipList = [...tooltipTriggerList].map(
+    (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
+  );
 });

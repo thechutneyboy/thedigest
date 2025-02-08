@@ -137,14 +137,19 @@ function renderSidebar() {
   const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
   rssList.innerHTML = "";
 
+  console.log(new Set([...rssUrls.map((r) => r.category)]));
+  const categories = new Set([...rssUrls.map((r) => r.category)]);
+
   console.log(rssUrls);
   rssUrls.sort((a, b) => a.title.localeCompare(b.title));
   rssUrls.forEach((rss, index) => {
     const item = document.createElement("li");
     item.className = "list-group-item p-2";
     item.innerHTML = `
-      <div class="d-flex justify-content-between">
-        <a href="#" class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
+      <div class="d-flex justify-content-between" style="border-left: 4px solid ${
+        rss.color || feedColor
+      };">
+        <a href="#" class="ps-2 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
           rss.title
         }</a>
         <div class="form-check form-switch">
@@ -224,7 +229,7 @@ function renderSidebar() {
           </div>
         </div>
         <div class="row d-flex justify-content-center">
-          <button id="saveFeedDetails" type="submit" class="btn btn-primary col-3 " disabled>Save</button>
+          <button id="saveFeedDetails" type="submit" class="btn btn-primary col-3" data-bs-dismiss="modal" disabled>Save</button>
         </div>
       </form>
       `;
@@ -238,7 +243,7 @@ function renderSidebar() {
         labelPreview.innerHTML = titleInput.value;
       });
       bgColorInput.addEventListener("input", () => {
-        labelPreview.style.Color = getBestTextColor(bgColorInput.value);
+        labelPreview.style.color = getBestTextColor(bgColorInput.value);
         labelPreview.style.backgroundColor = bgColorInput.value;
         labelBorderPreview.style.borderBottomColor = bgColorInput.value;
       });
@@ -259,8 +264,6 @@ function renderSidebar() {
         rss.category = rssCategory.value;
         rss.color = bgColorInput.value;
 
-        //closemodal
-        //render page
         rssUrlsMap.delete(rss.url);
         rssUrlsMap.set(rss.url, rss);
         const updatedRSSUrls = Array.from(rssUrlsMap.values());
@@ -318,11 +321,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const title = rsstitle;
         rssUrls.push({
           url: rssUrl,
-          title,
+          title: title,
           paywall: false,
           website: rssWebsite,
           category: "",
-          color: feedColor,
+          color: getMatchingValueRegex(rssWebsite, colorMap) || feedColor,
         });
         saveRSSUrls(rssUrls);
         renderSidebar();
@@ -333,6 +336,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Initialize tooltips
   const tooltipTriggerList = document.querySelectorAll(
     '[data-bs-toggle="tooltip"]'
   );

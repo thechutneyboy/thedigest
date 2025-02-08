@@ -1,3 +1,20 @@
+const colorMap = {
+  "bbc.co.uk/sport": "#ffd230",
+  "bbc.co.uk": "#b80000",
+  "ft.com": "#fff1e5",
+  "google.com": "#4285f4",
+  "livemint.com": "#f99d1c",
+  "nytimes.com": "#000000",
+  "reddit.com": "#d93900",
+  "theguardian.com": "#052962",
+};
+
+function getMatchingValueRegex(str, obj) {
+  const regex = new RegExp(Object.keys(obj).join("|"), "i"); // Case-insensitive search
+  const match = str.match(regex);
+  return match ? obj[match[0]] : null;
+}
+
 function xmlToJson(xml) {
   let obj = {};
 

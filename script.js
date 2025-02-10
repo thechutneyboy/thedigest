@@ -106,6 +106,7 @@ async function loadFeeds(rssFeeds) {
           feedCards.push({
             card: card,
             pubDate: new Date(item.pubDate),
+            relativeTime: classifyDate(new Date(), item.pubDate),
             link: link,
           });
         });
@@ -120,16 +121,41 @@ async function loadFeeds(rssFeeds) {
 
   const cards = cardlist.flat();
   const sortedCards = cards.sort((a, b) => b.pubDate - a.pubDate);
-  const uniqueCards = Object.values(
+  let uniqueCards = Object.values(
     sortedCards.reduce((prev, curr) => {
       prev[curr.link] = curr;
       return prev;
     }, {})
   );
 
-  uniqueCards.forEach((c) => {
-    feedItems.appendChild(c.card);
+  const partitions = new Set(cards.map((c) => c.relativeTime));
+  console.log(partitions);
+
+  partitions.forEach((p) => {
+    const partitionDiv = document.createElement("div");
+    partitionDiv.innerHTML = `
+      <div class="partition text-body-secondary g-0" style="font-size: small;">
+          <span>
+              <em>${p}</em>
+          </span>
+          <hr>
+      </div>
+    `;
+    const partitionCardsDiv = document.createElement("div");
+    partitionCardsDiv.className =
+      "cards row row-cols-2 row-cols-sm-2 row-cols-md-4 g-1";
+    partitionDiv.appendChild(partitionCardsDiv);
+
+    feedItems.appendChild(partitionDiv);
+    let cardsInPartition = uniqueCards.filter((c) => c.relativeTime === p);
+    cardsInPartition.forEach((c) => {
+      partitionCardsDiv.appendChild(c.card);
+    });
   });
+
+  // uniqueCards.forEach((c) => {
+  //   feedItems.appendChild(c.card);
+  // });
 }
 
 function renderSidebar() {
@@ -137,167 +163,199 @@ function renderSidebar() {
   const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
   rssList.innerHTML = "";
 
-  console.log(new Set([...rssUrls.map((r) => r.category)]));
-  const categories = new Set([...rssUrls.map((r) => r.category)]);
+  let categories = new Set(
+    [...rssUrls.map((r) => r.category)].filter(
+      (c) => !["", "Google", "Reddit"].includes(c)
+    )
+  );
+  const sortedCategories = [
+    ...[""],
+    ...[...categories].sort((a, b) => a.localeCompare(b)),
+    ...["Google"],
+    ...["Reddit"],
+  ];
+  console.log(sortedCategories);
 
-  console.log(rssUrls);
-  rssUrls.sort((a, b) => a.title.localeCompare(b.title));
-  rssUrls.forEach((rss, index) => {
-    const item = document.createElement("li");
-    item.className = "list-group-item p-2";
-    item.innerHTML = `
-      <div class="d-flex justify-content-between" style="border-left: 4px solid ${
-        rss.color || feedColor
-      };">
-        <a href="#" class="ps-2 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
-          rss.title
-        }</a>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
-        </div>
-        <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}"></i>
-      </div>
-      <div class="collapse bg-light" id="collapse${index}">
-        <div class="d-flex justify-content-around">
-          <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit Feed">
-            <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#feedDetails">
-              <i class="bi bi-pencil-square" style="color: grey;" ></i>
-            </button>
-          </div>
-          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
-            <i class="bi bi-copy" style="color: grey;"></i>
-          </button>
-          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Visit Website">
-            <a href="${rss.website || rss.url}" target="_blank">
-              <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
-            </a>
-          </button>
-          <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove feed">
-            <i class="bi bi-trash" style="color: red;"></i>
-          </button>
-        </div>
-      </div>
+  sortedCategories.forEach((category) => {
+    const urlList = rssUrls.filter((r) => r.category === category);
+    if (urlList.length !== 0) {
+      const section = document.createElement("li");
+      section.className = "list-group-item p-2";
+      section.innerHTML = `
+      ${category}
+      <ul class="list-group list-group-flush">
+      </ul>
       `;
 
-    const feed = item.querySelector("a");
-    feed.addEventListener("click", () => loadFeeds([rss]));
-
-    const editBtn = item.querySelector(".bi-pencil-square");
-    editBtn.addEventListener("click", (e) => {
-      const modal = document.getElementById("feedDetailsBody");
-      modal.innerHTML = `
-      <form id="feedDetailsForm" class="row g-3">
-        <div class="mb-3">
-          <label for="rssTitle" class="form-label">Title</label>
-          <input type="text" class="form-control" id="rssTitle" value="${
-            rss.title
-          }">
-        </div>
-        <div class="mb-3">
-          <label for="rssUrl" class="form-label">XML URL</label>
-          <input type="text" class="form-control" id="rssUrl" value="${
-            rss.url
-          }" disabled>
-        </div>
-        <div class="mb-3">
-          <label for="rssWebsite" class="form-label">Website</label>
-          <input type="text" class="form-control" id="rssWebsite" value="${
-            rss.website || rss.url
-          }" disabled>
-        </div>
-        <div class="mb-3">
-          <label for="rssCategory" class="form-label">Category</label>
-          <input type="text" class="form-control" id="rssCategory" placeholder="" value="${
-            rss.category || ""
-          }">
-        </div>
-        <div class="mb-3">
-          <label for="rssColorBg" class="form-label">Label Color</label>
-          <input type="color" class="form-control form-control-color" id="rssColorBg" value="${
-            rss.color || feedColor
-          }">
-        </div>
-        <div class="row d-flex justify-content-center">
-          <div id="labelBorderPreview" class="col-6 m-3 p-2 bg-white rounded-0 position-relative" style="border:none; border-bottom: 1px solid ${
+      urlList.sort((a, b) => a.title.localeCompare(b.title));
+      console.log(category, urlList);
+      urlList.forEach((rss, index) => {
+        const item = document.createElement("li");
+        item.className = "list-group-item p-2";
+        item.innerHTML = `
+          <div class="d-flex justify-content-between" style="border-left: 4px solid ${
             rss.color || feedColor
           };">
-            <div id="labelPreview" class="px-3 position-absolute bottom-0 end-0" style="font-size: small; background: ${
-              rss.color || feedColor
-            }; color: ${getBestTextColor(rss.color || feedColor)};">
-                ${rss.title}
+            <a href="#" class="ps-2 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
+              rss.title
+            }</a>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+            </div>
+            <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${
+              category + index
+            }" aria-expanded="false" aria-controls="collapse${
+          category + index
+        }"></i>
+          </div>
+          <div class="collapse bg-light" id="collapse${category + index}">
+            <div class="d-flex justify-content-around">
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit Feed">
+                <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#feedDetails">
+                  <i class="bi bi-pencil-square" style="color: grey;" ></i>
+                </button>
+              </div>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
+                <i class="bi bi-copy" style="color: grey;"></i>
+              </button>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Visit Website">
+                <a href="${rss.website || rss.url}" target="_blank">
+                  <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
+                </a>
+              </button>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove feed">
+                <i class="bi bi-trash" style="color: red;"></i>
+              </button>
             </div>
           </div>
-        </div>
-        <div class="row d-flex justify-content-center">
-          <button id="saveFeedDetails" type="submit" class="btn btn-primary col-3" data-bs-dismiss="modal" disabled>Save</button>
-        </div>
-      </form>
-      `;
+          `;
 
-      const titleInput = document.getElementById("rssTitle");
-      const bgColorInput = document.getElementById("rssColorBg");
-      const labelBorderPreview = document.getElementById("labelBorderPreview");
-      const labelPreview = document.getElementById("labelPreview");
+        const feed = item.querySelector("a");
+        feed.addEventListener("click", () => loadFeeds([rss]));
 
-      titleInput.addEventListener("input", () => {
-        labelPreview.innerHTML = titleInput.value;
+        const editBtn = item.querySelector(".bi-pencil-square");
+        editBtn.addEventListener("click", (e) => {
+          const modal = document.getElementById("feedDetailsBody");
+          modal.innerHTML = `
+          <form id="feedDetailsForm" class="row g-3">
+            <div class="mb-3">
+              <label for="rssTitle" class="form-label">Title</label>
+              <input type="text" class="form-control" id="rssTitle" value="${
+                rss.title
+              }">
+            </div>
+            <div class="mb-3">
+              <label for="rssUrl" class="form-label">XML URL</label>
+              <input type="text" class="form-control" id="rssUrl" value="${
+                rss.url
+              }" disabled>
+            </div>
+            <div class="mb-3">
+              <label for="rssWebsite" class="form-label">Website</label>
+              <input type="text" class="form-control" id="rssWebsite" value="${
+                rss.website || rss.url
+              }" disabled>
+            </div>
+            <div class="mb-3">
+              <label for="rssCategory" class="form-label">Category</label>
+              <input type="text" class="form-control" id="rssCategory" placeholder="" value="${
+                rss.category || ""
+              }">
+            </div>
+            <div class="mb-3">
+              <label for="rssColorBg" class="form-label">Label Color</label>
+              <input type="color" class="form-control form-control-color" id="rssColorBg" value="${
+                rss.color || feedColor
+              }">
+            </div>
+            <div class="row d-flex justify-content-center">
+              <div id="labelBorderPreview" class="col-6 m-3 p-2 bg-white rounded-0 position-relative" style="border:none; border-bottom: 1px solid ${
+                rss.color || feedColor
+              };">
+                <div id="labelPreview" class="px-3 position-absolute bottom-0 end-0" style="font-size: small; background: ${
+                  rss.color || feedColor
+                }; color: ${getBestTextColor(rss.color || feedColor)};">
+                    ${rss.title}
+                </div>
+              </div>
+            </div>
+            <div class="row d-flex justify-content-center">
+              <button id="saveFeedDetails" type="submit" class="btn btn-primary col-3" data-bs-dismiss="modal" disabled>Save</button>
+            </div>
+          </form>
+          `;
+
+          const titleInput = document.getElementById("rssTitle");
+          const bgColorInput = document.getElementById("rssColorBg");
+          const labelBorderPreview =
+            document.getElementById("labelBorderPreview");
+          const labelPreview = document.getElementById("labelPreview");
+
+          titleInput.addEventListener("input", () => {
+            labelPreview.innerHTML = titleInput.value;
+          });
+          bgColorInput.addEventListener("input", () => {
+            labelPreview.style.color = getBestTextColor(bgColorInput.value);
+            labelPreview.style.backgroundColor = bgColorInput.value;
+            labelBorderPreview.style.borderBottomColor = bgColorInput.value;
+          });
+
+          const form = document.getElementById("feedDetailsForm");
+          const saveBtn = document.getElementById("saveFeedDetails");
+
+          form.addEventListener("input", (e) => {
+            e.stopImmediatePropagation();
+            saveBtn.disabled = false;
+          });
+
+          saveBtn.addEventListener("click", (e) => {
+            console.log("Saving feed details");
+            console.log(rss);
+
+            rss.title = titleInput.value;
+            rss.category = rssCategory.value;
+            rss.color = bgColorInput.value;
+
+            rssUrlsMap.delete(rss.url);
+            rssUrlsMap.set(rss.url, rss);
+            const updatedRSSUrls = Array.from(rssUrlsMap.values());
+
+            saveRSSUrls(updatedRSSUrls);
+            renderSidebar();
+          });
+        });
+
+        const copyBtn = item.querySelector(".bi-copy");
+        copyBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          navigator.clipboard.writeText(rss.url);
+          const toastLiveExample = document.getElementById("copyToast");
+          const toastBootstrap =
+            bootstrap.Toast.getOrCreateInstance(toastLiveExample);
+
+          toastBootstrap.show();
+        });
+
+        const removeBtn = item.querySelector(".bi-trash");
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          rssUrlsMap.delete(rss.url);
+          const updatedRSSUrls = Array.from(rssUrlsMap.values());
+
+          saveRSSUrls(updatedRSSUrls);
+          renderSidebar();
+        });
+
+        const sectionList = section.querySelector("ul");
+        sectionList.appendChild(item);
       });
-      bgColorInput.addEventListener("input", () => {
-        labelPreview.style.color = getBestTextColor(bgColorInput.value);
-        labelPreview.style.backgroundColor = bgColorInput.value;
-        labelBorderPreview.style.borderBottomColor = bgColorInput.value;
-      });
 
-      const form = document.getElementById("feedDetailsForm");
-      const saveBtn = document.getElementById("saveFeedDetails");
-
-      form.addEventListener("input", (e) => {
-        e.stopImmediatePropagation();
-        saveBtn.disabled = false;
-      });
-
-      saveBtn.addEventListener("click", (e) => {
-        console.log("Saving feed details");
-        console.log(rss);
-
-        rss.title = titleInput.value;
-        rss.category = rssCategory.value;
-        rss.color = bgColorInput.value;
-
-        rssUrlsMap.delete(rss.url);
-        rssUrlsMap.set(rss.url, rss);
-        const updatedRSSUrls = Array.from(rssUrlsMap.values());
-
-        saveRSSUrls(updatedRSSUrls);
-        renderSidebar();
-      });
-    });
-
-    const copyBtn = item.querySelector(".bi-copy");
-    copyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-
-      navigator.clipboard.writeText(rss.url);
-      const toastLiveExample = document.getElementById("copyToast");
-      const toastBootstrap =
-        bootstrap.Toast.getOrCreateInstance(toastLiveExample);
-
-      toastBootstrap.show();
-    });
-
-    const removeBtn = item.querySelector(".bi-trash");
-    removeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-
-      rssUrlsMap.delete(rss.url);
-      const updatedRSSUrls = Array.from(rssUrlsMap.values());
-
-      saveRSSUrls(updatedRSSUrls);
-      renderSidebar();
-    });
-
-    rssList.appendChild(item);
+      rssList.appendChild(section);
+    }
   });
+  console.log(rssUrls);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

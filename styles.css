@@ -33,3 +33,22 @@ h2 {
         font-weight: 700;
         font-style: normal;
 } */
+
+.partition {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.partition span {
+    white-space: nowrap;
+    /* Prevents text from breaking */
+}
+
+.partition hr {
+    flex-grow: 1;
+    /* Makes the line take the remaining space */
+    border: none;
+    border-top: 2px dotted #999;
+    /* Customizes the line */
+}

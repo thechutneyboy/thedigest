@@ -15,6 +15,44 @@ function getMatchingValueRegex(str, obj) {
   return match ? obj[match[0]] : null;
 }
 
+function classifyDate(now, date) {
+  const inputDate = new Date(date);
+
+  // Relative date classification
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const lastWeek = new Date(today);
+  lastWeek.setDate(today.getDate() - 7);
+
+  const lastMonth = new Date(today);
+  lastMonth.setMonth(today.getMonth() - 1);
+
+  let relativeTime;
+  if (inputDate.toDateString() === today.toDateString()) {
+    relativeTime = "Today";
+  } else if (inputDate.toDateString() === yesterday.toDateString()) {
+    relativeTime = "Yesterday";
+  } else if (inputDate >= lastWeek && inputDate < today) {
+    relativeTime = "Last Week";
+  } else {
+    relativeTime = "Older";
+  }
+
+  // Time of day classification
+  const hours = inputDate.getHours();
+  let timeOfDay;
+  if (relativeTime === "Today") {
+    if (hours >= 0 && hours < 7) relativeTime = "Early Morning";
+    else if (hours >= 7 && hours < 12) relativeTime = "Morning";
+    else if (hours >= 12 && hours < 17) relativeTime = "Afternoon";
+    else relativeTime = "Evening";
+  }
+
+  return relativeTime;
+}
+
 function xmlToJson(xml) {
   let obj = {};
 

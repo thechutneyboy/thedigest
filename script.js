@@ -5,6 +5,8 @@ const rssInput = document.getElementById("rss-url");
 const rssList = document.getElementById("rss-list");
 const feedItems = document.getElementById("feed-items");
 
+const storyCards = [];
+
 const apiUrl = "https://api.rss2json.com/v1/api.json";
 
 function loadRSSUrls() {
@@ -53,7 +55,7 @@ async function fetchFeed(rss_url) {
 async function loadFeeds(rssFeeds) {
   feedItems.innerHTML = "<li>Loading feed...</li>";
 
-  const cardlist = await Promise.all(
+  let cardList = await Promise.all(
     rssFeeds.map(async (feed) => {
       let feedCards = [];
       try {
@@ -63,17 +65,20 @@ async function loadFeeds(rssFeeds) {
 
         feedItems.innerHTML = "";
         items.forEach((item) => {
-          const title = item.title;
+          const headline = item.title;
           const link = item.link;
-          const pubDate = new Date(item.pubDate).toLocaleString([], {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
+          const pubDate =
+            new Date(item.pubDate).toLocaleString([], {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            }) +
+            " • " +
+            new Date(item.pubDate).toLocaleString([], {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            });
           const img = item.enclosure.link || item.enclosure.thumbnail || "";
 
           // Create a card for each article
@@ -88,7 +93,7 @@ async function loadFeeds(rssFeeds) {
                   }
                   </div>    
                   <div class="card-body p-2">
-                    <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${title}</a>
+                    <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${headline}</a>
                     <p class="card-subtitle text-body-secondary py-2" style="font-size: small;">${pubDate}</p>
                   </div>
                   <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${
@@ -105,6 +110,7 @@ async function loadFeeds(rssFeeds) {
           // bg-body border-bottom border-light-subtle rounded-0
           feedCards.push({
             card: card,
+            title: feed.title,
             pubDate: new Date(item.pubDate),
             relativeTime: classifyDate(new Date(), item.pubDate),
             link: link,
@@ -119,17 +125,21 @@ async function loadFeeds(rssFeeds) {
     })
   );
 
-  const cards = cardlist.flat();
-  const sortedCards = cards.sort((a, b) => b.pubDate - a.pubDate);
-  let uniqueCards = Object.values(
-    sortedCards.reduce((prev, curr) => {
+  // Flatten, Sort and Remove Duplicates
+  cardList = cardList.flat().sort((a, b) => b.pubDate - a.pubDate);
+  cardList = Object.values(
+    cardList.reduce((prev, curr) => {
       prev[curr.link] = curr;
       return prev;
     }, {})
   );
+  storyCards.push(...cardList);
+  renderPage(storyCards);
+}
 
-  const partitions = new Set(cards.map((c) => c.relativeTime));
-  console.log(partitions);
+function renderPage(cardList) {
+  feedItems.innerHTML = "";
+  const partitions = new Set(cardList.map((c) => c.relativeTime));
 
   partitions.forEach((p) => {
     const partitionDiv = document.createElement("div");
@@ -147,15 +157,11 @@ async function loadFeeds(rssFeeds) {
     partitionDiv.appendChild(partitionCardsDiv);
 
     feedItems.appendChild(partitionDiv);
-    let cardsInPartition = uniqueCards.filter((c) => c.relativeTime === p);
+    let cardsInPartition = cardList.filter((c) => c.relativeTime === p);
     cardsInPartition.forEach((c) => {
       partitionCardsDiv.appendChild(c.card);
     });
   });
-
-  // uniqueCards.forEach((c) => {
-  //   feedItems.appendChild(c.card);
-  // });
 }
 
 function renderSidebar() {
@@ -193,7 +199,7 @@ function renderSidebar() {
       `;
 
       urlList.sort((a, b) => a.title.localeCompare(b.title));
-      console.log(category, urlList);
+      // console.log(category, urlList);
       urlList.forEach((rss, index) => {
         const item = document.createElement("li");
         item.className = "list-group-item p-2";
@@ -236,7 +242,8 @@ function renderSidebar() {
           `;
 
         const feed = item.querySelector("a");
-        feed.addEventListener("click", () => loadFeeds([rss]));
+        let stories = storyCards.filter((c) => c.title === rss.title);
+        feed.addEventListener("click", () => renderPage(stories));
 
         const editBtn = item.querySelector(".bi-pencil-square");
         editBtn.addEventListener("click", (e) => {
@@ -364,10 +371,14 @@ function renderSidebar() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  renderSidebar();
-
   const rssFeeds = loadRSSUrls();
   await loadFeeds(rssFeeds);
+  renderSidebar();
+
+  const refreshBtn = document.getElementById("refresh");
+  refreshBtn.addEventListener("click", async () => {
+    await loadFeeds(rssFeeds);
+  });
 
   // Handle form submission
   rssForm.addEventListener("submit", async (event) => {

@@ -42,6 +42,7 @@ h2 {
 
 .partition span {
     white-space: nowrap;
+    padding-right: 0.5rem;
     /* Prevents text from breaking */
 }
 
@@ -51,4 +52,8 @@ h2 {
     border: none;
     border-top: 2px dotted #999;
     /* Customizes the line */
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: none;
 }

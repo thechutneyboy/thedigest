@@ -179,11 +179,16 @@ function renderSidebar() {
   sortedCategories.forEach((category) => {
     const urlList = rssUrls.filter((r) => r.category === category);
     if (urlList.length !== 0) {
-      const section = document.createElement("li");
-      section.className = "list-group-item p-2";
+      const section = document.createElement("div");
+      section.className = "accordion-item p-0";
+
       section.innerHTML = `
-      ${category}
-      <ul class="list-group list-group-flush">
+      <h6 class="accordion-header">
+        <button class="accordion-button p-2" style="background-color: white; box-shadow:none;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${category}" aria-expanded="true" aria-controls="collapse${category}">
+          ${category}
+        </button>
+      </h6>
+      <ul id="collapse${category}" class="accordion-collapse collapse show mb-2 p-0" >
       </ul>
       `;
 

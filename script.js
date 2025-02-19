@@ -342,9 +342,8 @@ function renderSidebar() {
           e.stopPropagation();
 
           navigator.clipboard.writeText(rss.url);
-          const toastLiveExample = document.getElementById("copyToast");
-          const toastBootstrap =
-            bootstrap.Toast.getOrCreateInstance(toastLiveExample);
+          const toastCopy = document.getElementById("copyToast");
+          const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastCopy);
 
           toastBootstrap.show();
         });
@@ -380,12 +379,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadFeeds(rssFeeds);
   });
 
+  const feedType = document.getElementById("feed-type");
+  feedType.addEventListener("change", () => {
+    const prefix = document.getElementById("prefix");
+    if (prefix) {
+      prefix.remove();
+    }
+    if (feedType.value === "rss") {
+      rssInput.placeholder = "RSS feed URL";
+    } else if (feedType.value === "reddit") {
+      rssInput.placeholder = "subreddit";
+      const redditPrefix = document.createElement("div");
+      const inputGroup = document.querySelector(".input-group");
+      redditPrefix.className = "input-group-text";
+      redditPrefix.innerHTML = "r/";
+      redditPrefix.id = "prefix";
+      inputGroup.insertBefore(redditPrefix, inputGroup.firstChild);
+    } else if (feedType.value === "google") {
+      rssInput.placeholder = "Keyword";
+    }
+  });
+
   // Handle form submission
   rssForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const rssUrl = rssInput.value.trim();
+    let rssUrl = "";
+    if (feedType.value === "rss") {
+      rssUrl = rssInput.value.trim();
+    } else if (feedType.value === "google") {
+      rssUrl = `https://news.google.com/news/rss/search?q=${rssInput.value
+        .trim()
+        .replace(/ /g, "+")}`;
+    } else if (feedType.value === "reddit") {
+      rssUrl = `https://www.reddit.com/search.rss?q=r%2F${rssInput.value.trim()}&type=link&limit=20&sort=hot`;
+    }
+
     const data = await fetchFeed(rssUrl);
-    const rsstitle = data.feed.title;
+    let rsstitle = data.feed.title;
+    let category = "";
+    if (feedType.value === "google") {
+      rsstitle = rsstitle.replace(/["]| News/g, "");
+      category = "Google";
+    } else if (feedType.value === "reddit") {
+      rsstitle = rsstitle.replace(/reddit.com: search results - /g, "");
+      category = "Reddit";
+    }
     const rssWebsite = data.feed.link;
 
     if (rssUrl) {
@@ -398,11 +436,16 @@ document.addEventListener("DOMContentLoaded", async () => {
           title: title,
           paywall: false,
           website: rssWebsite,
-          category: "",
+          category: category,
           color: getMatchingValueRegex(rssWebsite, colorMap) || feedColor,
         });
         saveRSSUrls(rssUrls);
         renderSidebar();
+
+        const toastFeed = document.getElementById("feedAddedToast");
+        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastFeed);
+        toastBootstrap.show();
+
         rssInput.value = "";
       } else {
         alert("This RSS feed is already saved.");

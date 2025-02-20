@@ -10,6 +10,17 @@ h2 {
     backdrop-filter: blur(8px);
 }
 
+.scroll-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 0%;
+    background-color: #feda00;
+    /* Blue progress bar */
+    transition: width 0.1s linear;
+}
+
 .cards {
     display: flex;
     flex-wrap: wrap;
@@ -28,11 +39,12 @@ h2 {
     object-position: top;
 }
 
-/* .headlines {
-    font-family: "Cormorant Garamond", serif;
-        font-weight: 700;
-        font-style: normal;
-} */
+.headlines {
+    font-family: "Optima", serif;
+    /* "Cormorant Garamond", serif; */
+    font-weight: 700;
+    font-style: normal;
+}
 
 .partition {
     display: flex;

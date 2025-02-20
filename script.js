@@ -164,91 +164,9 @@ function renderPage(cardList) {
   });
 }
 
-function renderSidebar() {
-  const rssUrls = loadRSSUrls();
-  const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
-  rssList.innerHTML = "";
-
-  let categories = new Set(
-    [...rssUrls.map((r) => r.category)].filter(
-      (c) => !["", "Google", "Reddit"].includes(c)
-    )
-  );
-  const sortedCategories = [
-    ...[""],
-    ...[...categories].sort((a, b) => a.localeCompare(b)),
-    ...["Google"],
-    ...["Reddit"],
-  ];
-  console.log(sortedCategories);
-
-  sortedCategories.forEach((category) => {
-    const urlList = rssUrls.filter((r) => r.category === category);
-    if (urlList.length !== 0) {
-      const section = document.createElement("div");
-      section.className = "accordion-item p-0";
-
-      section.innerHTML = `
-      <h6 class="accordion-header">
-        <button class="accordion-button p-2" style="background-color: white; box-shadow:none;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${category}" aria-expanded="true" aria-controls="collapse${category}">
-          ${category}
-        </button>
-      </h6>
-      <ul id="collapse${category}" class="accordion-collapse collapse show mb-2 p-0" >
-      </ul>
-      `;
-
-      urlList.sort((a, b) => a.title.localeCompare(b.title));
-      // console.log(category, urlList);
-      urlList.forEach((rss, index) => {
-        const item = document.createElement("li");
-        item.className = "list-group-item p-2";
-        item.innerHTML = `
-          <div class="d-flex justify-content-between" style="border-left: 4px solid ${
-            rss.color || feedColor
-          };">
-            <a href="#" class="ps-2 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
-              rss.title
-            }</a>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
-            </div>
-            <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${
-              category + index
-            }" aria-expanded="false" aria-controls="collapse${
-          category + index
-        }"></i>
-          </div>
-          <div class="collapse bg-light" id="collapse${category + index}">
-            <div class="d-flex justify-content-around">
-              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit Feed">
-                <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#feedDetails">
-                  <i class="bi bi-pencil-square" style="color: grey;" ></i>
-                </button>
-              </div>
-              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
-                <i class="bi bi-copy" style="color: grey;"></i>
-              </button>
-              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Visit Website">
-                <a href="${rss.website || rss.url}" target="_blank">
-                  <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
-                </a>
-              </button>
-              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove feed">
-                <i class="bi bi-trash" style="color: red;"></i>
-              </button>
-            </div>
-          </div>
-          `;
-
-        const feed = item.querySelector("a");
-        let stories = storyCards.filter((c) => c.title === rss.title);
-        feed.addEventListener("click", () => renderPage(stories));
-
-        const editBtn = item.querySelector(".bi-pencil-square");
-        editBtn.addEventListener("click", (e) => {
-          const modal = document.getElementById("feedDetailsBody");
-          modal.innerHTML = `
+function feedEdit(rss) {
+  const modal = document.getElementById("feedDetailsBody");
+  modal.innerHTML = `
           <form id="feedDetailsForm" class="row g-3">
             <div class="mb-3">
               <label for="rssTitle" class="form-label">Title</label>
@@ -297,45 +215,136 @@ function renderSidebar() {
           </form>
           `;
 
-          const titleInput = document.getElementById("rssTitle");
-          const bgColorInput = document.getElementById("rssColorBg");
-          const labelBorderPreview =
-            document.getElementById("labelBorderPreview");
-          const labelPreview = document.getElementById("labelPreview");
+  const titleInput = document.getElementById("rssTitle");
+  const bgColorInput = document.getElementById("rssColorBg");
+  const labelBorderPreview = document.getElementById("labelBorderPreview");
+  const labelPreview = document.getElementById("labelPreview");
 
-          titleInput.addEventListener("input", () => {
-            labelPreview.innerHTML = titleInput.value;
-          });
-          bgColorInput.addEventListener("input", () => {
-            labelPreview.style.color = getBestTextColor(bgColorInput.value);
-            labelPreview.style.backgroundColor = bgColorInput.value;
-            labelBorderPreview.style.borderBottomColor = bgColorInput.value;
-          });
+  titleInput.addEventListener("input", () => {
+    labelPreview.innerHTML = titleInput.value;
+  });
+  bgColorInput.addEventListener("input", () => {
+    labelPreview.style.color = getBestTextColor(bgColorInput.value);
+    labelPreview.style.backgroundColor = bgColorInput.value;
+    labelBorderPreview.style.borderBottomColor = bgColorInput.value;
+  });
 
-          const form = document.getElementById("feedDetailsForm");
-          const saveBtn = document.getElementById("saveFeedDetails");
+  const form = document.getElementById("feedDetailsForm");
+  const saveBtn = document.getElementById("saveFeedDetails");
 
-          form.addEventListener("input", (e) => {
-            e.stopImmediatePropagation();
-            saveBtn.disabled = false;
-          });
+  form.addEventListener("input", (e) => {
+    e.stopImmediatePropagation();
+    saveBtn.disabled = false;
+  });
 
-          saveBtn.addEventListener("click", (e) => {
-            console.log("Saving feed details");
-            console.log(rss);
+  saveBtn.addEventListener("click", (e) => {
+    console.log("Saving feed details");
+    console.log(rss);
 
-            rss.title = titleInput.value;
-            rss.category = rssCategory.value;
-            rss.color = bgColorInput.value;
+    rss.title = titleInput.value;
+    rss.category = rssCategory.value;
+    rss.color = bgColorInput.value;
 
-            rssUrlsMap.delete(rss.url);
-            rssUrlsMap.set(rss.url, rss);
-            const updatedRSSUrls = Array.from(rssUrlsMap.values());
+    rssUrlsMap.delete(rss.url);
+    rssUrlsMap.set(rss.url, rss);
+    const updatedRSSUrls = Array.from(rssUrlsMap.values());
 
-            saveRSSUrls(updatedRSSUrls);
-            renderSidebar();
-          });
-        });
+    saveRSSUrls(updatedRSSUrls);
+    renderSidebar();
+  });
+}
+
+function renderSidebar() {
+  const rssUrls = loadRSSUrls();
+  const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
+  rssList.innerHTML = "";
+
+  let categories = new Set(
+    [...rssUrls.map((r) => r.category)].filter(
+      (c) => !["", "Google", "Reddit"].includes(c)
+    )
+  );
+  const sortedCategories = [
+    ...[""],
+    ...[...categories].sort((a, b) => a.localeCompare(b)),
+    ...["Google"],
+    ...["Reddit"],
+  ];
+  console.log(sortedCategories);
+
+  sortedCategories.forEach((category) => {
+    const urlList = rssUrls.filter((r) => r.category === category);
+    if (urlList.length !== 0) {
+      const section = document.createElement("div");
+      section.className = "accordion-item p-0";
+
+      section.innerHTML = `
+      <h6 class="accordion-header">
+        <button class="accordion-button p-2" style="background-color: white; box-shadow:none;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${category.replace(
+          " ",
+          ""
+        )}" aria-expanded="true" aria-controls="collapse${category}">
+          ${category}
+        </button>
+      </h6>
+      <ul id="collapse${category.replace(
+        " ",
+        ""
+      )}" class="accordion-collapse collapse show mb-2 p-0" >
+      </ul>
+      `;
+
+      urlList.sort((a, b) => a.title.localeCompare(b.title));
+      // console.log(category, urlList);
+      urlList.forEach((rss, index) => {
+        const item = document.createElement("li");
+        item.className = "list-group-item p-2";
+        item.innerHTML = `
+          <div class="d-flex justify-content-between" style="border-left: 4px solid ${
+            rss.color || feedColor
+          };">
+            <a href="#" class="ps-2 link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover flex-grow-1">${
+              rss.title
+            }</a>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckChecked" checked>
+            </div>
+            <i class="bi bi-chevron-down" style="float: right; color: grey;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${
+              category.replace(" ", "") + index
+            }" aria-expanded="false" aria-controls="collapse${
+          category.replace(" ", "") + index
+        }"></i>
+          </div>
+          <div class="collapse bg-light" id="collapse${
+            category.replace(" ", "") + index
+          }">
+            <div class="d-flex justify-content-around">
+              <div data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Edit Feed">
+                <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#feedDetails">
+                  <i class="bi bi-pencil-square" style="color: grey;" ></i>
+                </button>
+              </div>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Copy RSS URL">
+                <i class="bi bi-copy" style="color: grey;"></i>
+              </button>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Visit Website">
+                <a href="${rss.website || rss.url}" target="_blank">
+                  <i class="bi bi-box-arrow-up-right" style="color: grey;"></i>
+                </a>
+              </button>
+              <button type="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove feed">
+                <i class="bi bi-trash" style="color: red;"></i>
+              </button>
+            </div>
+          </div>
+          `;
+
+        const feed = item.querySelector("a");
+        let stories = storyCards.filter((c) => c.title === rss.title);
+        feed.addEventListener("click", () => renderPage(stories));
+
+        const editBtn = item.querySelector(".bi-pencil-square");
+        editBtn.addEventListener("click", (e) => feedEdit(rss));
 
         const copyBtn = item.querySelector(".bi-copy");
         copyBtn.addEventListener("click", (e) => {
@@ -460,4 +469,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tooltipList = [...tooltipTriggerList].map(
     (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
   );
+});
+
+window.addEventListener("scroll", () => {
+  const scrollTop = window.scrollY;
+  const scrollHeight =
+    document.documentElement.scrollHeight - window.innerHeight;
+  const scrollPercentage = (scrollTop / scrollHeight) * 100;
+
+  document.querySelector(".scroll-indicator").style.width =
+    scrollPercentage + "%";
 });

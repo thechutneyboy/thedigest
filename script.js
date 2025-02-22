@@ -2,7 +2,6 @@ const feedColor = "#dfdfdf";
 
 const rssForm = document.getElementById("rss-form");
 const rssInput = document.getElementById("rss-url");
-const rssList = document.getElementById("rss-list");
 const feedItems = document.getElementById("feed-items");
 
 const storyCards = [];
@@ -108,7 +107,6 @@ async function loadFeeds(rssFeeds) {
                   </div>
                 </div>
             `;
-          // bg-body border-bottom border-light-subtle rounded-0
           feedCards.push({
             card: card,
             title: feed.title,
@@ -142,7 +140,6 @@ async function loadFeeds(rssFeeds) {
 function renderPage(cardList, activeCategory = "All") {
   // Render Tabs
   const categoryTabs = document.getElementById("categoryTabs");
-  // categoryTabs.className = "overflow-x-auto";
   categoryTabs.innerHTML = "";
 
   let tabList = ["All", ...categories];
@@ -152,7 +149,7 @@ function renderPage(cardList, activeCategory = "All") {
     tab.innerHTML = `
     <a class="nav-link ${
       category === activeCategory ? "active" : ""
-    }" href="#">${category || "Uncategorised"}</a>
+    }" href="#">${category || "Homepage"}</a>
     `;
     const tabLink = tab.querySelector("a");
     tabLink.addEventListener("click", () => {
@@ -164,7 +161,6 @@ function renderPage(cardList, activeCategory = "All") {
       );
     });
     categoryTabs.appendChild(tab);
-    // console.log(category);
   });
 
   feedItems.innerHTML = "";
@@ -268,6 +264,7 @@ function feedEdit(rss, rssUrlsMap) {
   });
 
   saveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     console.log("Saving feed details");
     console.log(rss);
 
@@ -285,23 +282,12 @@ function feedEdit(rss, rssUrlsMap) {
 }
 
 function renderSidebar() {
-  const rssUrls = loadRSSUrls();
-  const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
+  const rssList = document.getElementById("rss-list");
   rssList.innerHTML = "";
 
-  let categoryList = new Set(
-    [...rssUrls.map((r) => r.category)].filter(
-      (c) => !["", "Google", "Reddit"].includes(c)
-    )
-  );
-  categoryList = [
-    ...[""],
-    ...[...categoryList].sort((a, b) => a.localeCompare(b)),
-    ...["Google"],
-    ...["Reddit"],
-  ];
-  categories.push(...categoryList);
-  console.log(categories);
+  const rssUrls = loadRSSUrls();
+  const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
+  deriveCategories(rssUrls);
 
   categories.forEach((category) => {
     const urlList = rssUrls.filter((r) => r.category === category);
@@ -311,11 +297,11 @@ function renderSidebar() {
 
       section.innerHTML = `
       <h6 class="accordion-header">
-        <button class="accordion-button p-2" style="background-color: white; box-shadow:none;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${category.replace(
+        <button class="accordion-button p-2" style="background-color: white; box-shadow:none;" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${category?.replace(
           " ",
           ""
         )}" aria-expanded="true" aria-controls="collapse${category}">
-          ${category}
+          ${category || "Homepage"} 
         </button>
       </h6>
       <ul id="collapse${category.replace(
@@ -372,6 +358,7 @@ function renderSidebar() {
 
         const feed = item.querySelector("a");
         let stories = storyCards.filter((c) => c.title === rss.title);
+        // console.log(stories.length, storyCards.length);
         feed.addEventListener("click", () => renderPage(stories));
 
         const editBtn = item.querySelector(".bi-pencil-square");
@@ -409,10 +396,29 @@ function renderSidebar() {
   console.log(rssUrls);
 }
 
+function deriveCategories(rssUrls) {
+  let categoryList = new Set(
+    [...rssUrls.map((r) => r.category)].filter(
+      (c) => !["", "Google", "Reddit"].includes(c)
+    )
+  );
+  categoryList = [
+    ...[""],
+    ...[...categoryList].sort((a, b) => a.localeCompare(b)),
+    ...["Google"],
+    ...["Reddit"],
+  ];
+  categories.length = 0;
+  categories.push(...categoryList);
+  console.log(categories);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const rssFeeds = loadRSSUrls();
-  renderSidebar();
+  deriveCategories(rssFeeds);
+
   await loadFeeds(rssFeeds);
+  renderSidebar();
 
   const refreshBtn = document.getElementById("refresh");
   refreshBtn.addEventListener("click", async () => {

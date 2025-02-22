@@ -6,6 +6,7 @@ const rssList = document.getElementById("rss-list");
 const feedItems = document.getElementById("feed-items");
 
 const storyCards = [];
+const categories = [];
 
 const apiUrl = "https://api.rss2json.com/v1/api.json";
 
@@ -111,6 +112,7 @@ async function loadFeeds(rssFeeds) {
           feedCards.push({
             card: card,
             title: feed.title,
+            category: feed.category,
             pubDate: new Date(item.pubDate),
             relativeTime: classifyDate(new Date(), item.pubDate),
             link: link,
@@ -137,7 +139,34 @@ async function loadFeeds(rssFeeds) {
   renderPage(storyCards);
 }
 
-function renderPage(cardList) {
+function renderPage(cardList, activeCategory = "All") {
+  // Render Tabs
+  const categoryTabs = document.getElementById("categoryTabs");
+  // categoryTabs.className = "overflow-x-auto";
+  categoryTabs.innerHTML = "";
+
+  let tabList = ["All", ...categories];
+  tabList.forEach((category) => {
+    const tab = document.createElement("li");
+    tab.className = "nav-item ms-1";
+    tab.innerHTML = `
+    <a class="nav-link ${
+      category === activeCategory ? "active" : ""
+    }" href="#">${category || "Uncategorised"}</a>
+    `;
+    const tabLink = tab.querySelector("a");
+    tabLink.addEventListener("click", () => {
+      renderPage(
+        category === "All"
+          ? storyCards
+          : storyCards.filter((c) => c.category === category),
+        category
+      );
+    });
+    categoryTabs.appendChild(tab);
+    // console.log(category);
+  });
+
   feedItems.innerHTML = "";
   const partitions = new Set(cardList.map((c) => c.relativeTime));
 
@@ -164,7 +193,7 @@ function renderPage(cardList) {
   });
 }
 
-function feedEdit(rss) {
+function feedEdit(rss, rssUrlsMap) {
   const modal = document.getElementById("feedDetailsBody");
   modal.innerHTML = `
           <form id="feedDetailsForm" class="row g-3">
@@ -216,6 +245,7 @@ function feedEdit(rss) {
           `;
 
   const titleInput = document.getElementById("rssTitle");
+  const rssCategory = document.getElementById("rssCategory");
   const bgColorInput = document.getElementById("rssColorBg");
   const labelBorderPreview = document.getElementById("labelBorderPreview");
   const labelPreview = document.getElementById("labelPreview");
@@ -259,20 +289,21 @@ function renderSidebar() {
   const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
   rssList.innerHTML = "";
 
-  let categories = new Set(
+  let categoryList = new Set(
     [...rssUrls.map((r) => r.category)].filter(
       (c) => !["", "Google", "Reddit"].includes(c)
     )
   );
-  const sortedCategories = [
+  categoryList = [
     ...[""],
-    ...[...categories].sort((a, b) => a.localeCompare(b)),
+    ...[...categoryList].sort((a, b) => a.localeCompare(b)),
     ...["Google"],
     ...["Reddit"],
   ];
-  console.log(sortedCategories);
+  categories.push(...categoryList);
+  console.log(categories);
 
-  sortedCategories.forEach((category) => {
+  categories.forEach((category) => {
     const urlList = rssUrls.filter((r) => r.category === category);
     if (urlList.length !== 0) {
       const section = document.createElement("div");
@@ -344,7 +375,7 @@ function renderSidebar() {
         feed.addEventListener("click", () => renderPage(stories));
 
         const editBtn = item.querySelector(".bi-pencil-square");
-        editBtn.addEventListener("click", (e) => feedEdit(rss));
+        editBtn.addEventListener("click", (e) => feedEdit(rss, rssUrlsMap));
 
         const copyBtn = item.querySelector(".bi-copy");
         copyBtn.addEventListener("click", (e) => {
@@ -380,8 +411,8 @@ function renderSidebar() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const rssFeeds = loadRSSUrls();
-  await loadFeeds(rssFeeds);
   renderSidebar();
+  await loadFeeds(rssFeeds);
 
   const refreshBtn = document.getElementById("refresh");
   refreshBtn.addEventListener("click", async () => {
@@ -475,7 +506,8 @@ window.addEventListener("scroll", () => {
   const scrollTop = window.scrollY;
   const scrollHeight =
     document.documentElement.scrollHeight - window.innerHeight;
-  const scrollPercentage = (scrollTop / scrollHeight) * 100;
+  const scrollPercentage =
+    scrollHeight === 0 ? 100 : (scrollTop / scrollHeight) * 100;
 
   document.querySelector(".scroll-indicator").style.width =
     scrollPercentage + "%";

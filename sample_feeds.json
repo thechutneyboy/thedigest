@@ -1,0 +1,136 @@
+[
+  {
+    "url": "http://feeds.bbci.co.uk/news/rss.xml",
+    "title": "BBC News",
+    "paywall": false,
+    "website": "https://www.bbc.co.uk/news",
+    "category": "",
+    "color": "#b80000"
+  },
+  {
+    "url": "https://www.efinancialcareers.com/feed/syndication/rss.xml",
+    "title": "eFinancialCareers",
+    "paywall": false,
+    "category": "Finance",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.theguardian.com/uk/rss",
+    "title": "The Guardian",
+    "paywall": false,
+    "website": "https://www.theguardian.com/uk",
+    "category": "",
+    "color": "#052962"
+  },
+  {
+    "url": "http://feeds.bbci.co.uk/sport/rss.xml",
+    "title": "BBC Sport",
+    "paywall": false,
+    "website": "https://www.bbc.co.uk/sport",
+    "category": "Sport",
+    "color": "#ffd230"
+  },
+  {
+    "url": "https://www.risk.net/feeds/rss/type/news",
+    "title": "News - Risk.net",
+    "paywall": false,
+    "category": "Finance",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.reddit.com/search.rss?q=r%2Fwallstreetbets&type=link&limit=20&sort=hot",
+    "title": "r/wallstreetbets",
+    "paywall": false,
+    "website": "https://www.reddit.com/search?limit=20&amp;q=r%2Fwallstreetbets&amp;sort=hot&amp;type=link",
+    "category": "Reddit",
+    "color": "#d93900"
+  },
+  {
+    "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+    "title": "BBC News - World",
+    "paywall": false,
+    "website": "https://www.bbc.co.uk/news/world",
+    "category": "",
+    "color": "#b80000"
+  },
+  {
+    "url": "https://www.reddit.com/search.rss?q=r%2Flondon&type=link&limit=20&sort=hot",
+    "title": "r/london",
+    "paywall": false,
+    "website": "https://www.reddit.com/search?limit=20&amp;q=r%2Flondon&amp;sort=hot&amp;type=link",
+    "category": "Reddit",
+    "color": "#d93900"
+  },
+  {
+    "url": "https://news.google.com/news/rss/search?q=Mistral",
+    "title": "Mistral - Google",
+    "paywall": false,
+    "website": "https://news.google.com/search?q=Mistral&amp;hl=en-GB&amp;gl=GB&amp;ceid=GB:en",
+    "category": "Google",
+    "color": "#4285f4"
+  },
+  {
+    "url": "https://thisweekindata.indiadatahub.com/feed",
+    "title": "This Week In Data",
+    "paywall": false,
+    "website": "https://thisweekindata.indiadatahub.com/",
+    "category": "Magazine",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://indianexpress.com/feed/",
+    "title": "The Indian Express",
+    "paywall": false,
+    "website": "https://indianexpress.com/",
+    "category": "India",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.dataforindia.com/rss/",
+    "title": "Data For India",
+    "paywall": false,
+    "website": "https://www.dataforindia.com/",
+    "category": "Magazine",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.wired.com/feed/rss",
+    "title": "WIRED",
+    "paywall": false,
+    "website": "https://www.wired.com/",
+    "category": "Technology",
+    "color": "#000000"
+  },
+  {
+    "url": "https://www.quantamagazine.org/feed/",
+    "title": "Quanta Magazine",
+    "paywall": false,
+    "website": "https://www.quantamagazine.org/",
+    "category": "Magazine",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.thehindu.com/news/national/?service=rss",
+    "title": "The Hindu",
+    "paywall": false,
+    "website": "https://www.thehindu.com/news/national/",
+    "category": "India",
+    "color": "#dfdfdf"
+  },
+  {
+    "url": "https://www.ft.com/rss/home/uk",
+    "title": "Financial Times",
+    "paywall": false,
+    "website": "https://www.ft.com/",
+    "category": "Finance",
+    "color": "#fff1e5"
+  },
+  {
+    "url": "https://www.livemint.com/rss/markets",
+    "title": "mint - markets",
+    "paywall": false,
+    "website": "https://www.livemint.com/rss/markets",
+    "category": "India Finance",
+    "color": "#f99d1c"
+  }
+]

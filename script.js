@@ -9,7 +9,19 @@ const categories = [];
 
 const apiUrl = "https://api.rss2json.com/v1/api.json";
 
-function loadRSSUrls() {
+async function loadRSSUrls() {
+  let rss = JSON.parse(localStorage.getItem("rssUrls"));
+  if (!rss) {
+    try {
+      const sample_rss = await fetch("sample_feeds.json");
+      rss = await sample_rss.json();
+      saveRSSUrls(rss);
+      console.log("Sample feeds loaded");
+    } catch (error) {
+      console.log("Error loading sample feeds:", error);
+    }
+  }
+
   return JSON.parse(localStorage.getItem("rssUrls")) || [];
 }
 
@@ -281,11 +293,11 @@ function feedEdit(rss, rssUrlsMap) {
   });
 }
 
-function renderSidebar() {
+async function renderSidebar() {
   const rssList = document.getElementById("rss-list");
   rssList.innerHTML = "";
 
-  const rssUrls = loadRSSUrls();
+  const rssUrls = await loadRSSUrls();
   const rssUrlsMap = new Map(rssUrls.map((r) => [r.url, r]));
   deriveCategories(rssUrls);
 
@@ -414,7 +426,7 @@ function deriveCategories(rssUrls) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const rssFeeds = loadRSSUrls();
+  const rssFeeds = await loadRSSUrls();
   deriveCategories(rssFeeds);
 
   await loadFeeds(rssFeeds);

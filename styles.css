@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fjord+One&display=swap');
+
 :root {
     --main-bg-color: #f9f9f9;
 }
@@ -45,9 +47,9 @@ h2 {
 }
 
 .headlines {
-    font-family: "Optima", serif;
-    /* "Cormorant Garamond", serif; */
-    font-weight: 700;
+    font-family: "Fjord One", -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 400 !important;
     font-style: normal;
 }
 
@@ -91,9 +93,7 @@ h2 {
 .nav-tabs-wrapper {
     display: flex;
     overflow-x: auto;
-    /* Enable horizontal scrolling */
     white-space: nowrap;
-    /* Prevent tabs from wrapping to the next line */
     scrollbar-width: thin;
     /* For Firefox */
     scroll-snap-type: x mandatory;

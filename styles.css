@@ -118,3 +118,22 @@ h2 {
 .nav-tabs .nav-item {
     scroll-snap-align: start;
 }
+
+.bookmark {
+    position: absolute;
+    top: -7px;
+    right: 5px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #ccc;
+    opacity: 0.6;
+    transition: color 0.3s;
+    text-shadow: 1px 1px 3px #222;
+    border: #fff;
+    /* stroke: 1px #fff; */
+}
+
+.bookmarked {
+    color: #feda00;
+    opacity: 1;
+}

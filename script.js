@@ -64,6 +64,75 @@ async function fetchFeed(rss_url) {
   }
 }
 
+function renderCard(feed, item) {
+  let headline = item.title;
+  let link = item.link;
+  let pubDate =
+    new Date(item.pubDate).toLocaleString([], {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }) +
+    " • " +
+    new Date(item.pubDate).toLocaleString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  let img = item.enclosure.link || item.enclosure.thumbnail || "";
+  let isBookmarked = false; // Check if item is bookmarked
+
+  // Create a card for each article
+  const card = document.createElement("div");
+  card.className = "col d-flex align-items-stretch";
+  card.innerHTML = `
+      <div class="card rounded-0 m-1 border-0 bg-white">
+        <div class="img-container">${
+          img
+            ? `<img src="${img}" class="card-img-top rounded-0" alt="...">`
+            : ""
+        }
+        </div>    
+        <div class="card-body p-2">
+          <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${headline}</a>
+          <p class="card-subtitle text-body-secondary py-2" style="font-size: small;">${pubDate}</p>
+        </div>
+        <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${
+          feed.color || feedColor
+        };">
+            <div class="px-3 fw-light position-absolute bottom-0 end-0" style="font-size: small; background: ${
+              feed.color || feedColor
+            }; color: ${getBestTextColor(feed.color || feedColor)};">
+              ${feed.title}
+            </div>
+        </div>
+        <i class="bi bi-bookmark-fill bookmark ${
+          isBookmarked ? "bookmarked" : ""
+        }"></i>
+      </div>
+  `;
+
+  let bookmark = card.querySelector(".bi-bookmark-fill");
+  bookmark.addEventListener("click", () => {
+    bookmark.classList.toggle("bookmarked");
+    if (bookmark.classList.contains("bookmarked")) {
+      // Save a mapping of url: {feed, item}
+      // Add to bookmarks
+    } else {
+      // Remove from bookmarks
+    }
+  });
+
+  return {
+    card: card,
+    title: feed.title,
+    category: feed.category,
+    pubDate: new Date(item.pubDate),
+    relativeTime: classifyDate(new Date(), item.pubDate),
+    link: link,
+  };
+}
+
 async function loadFeeds(rssFeeds) {
   feedItems.innerHTML = "<li>Loading feed...</li>";
 
@@ -77,56 +146,9 @@ async function loadFeeds(rssFeeds) {
 
         feedItems.innerHTML = "";
         items.forEach((item) => {
-          const headline = item.title;
-          const link = item.link;
-          const pubDate =
-            new Date(item.pubDate).toLocaleString([], {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-            }) +
-            " • " +
-            new Date(item.pubDate).toLocaleString([], {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            });
-          const img = item.enclosure.link || item.enclosure.thumbnail || "";
+          let card = renderCard(feed, item);
 
-          // Create a card for each article
-          const card = document.createElement("div");
-          card.className = "col d-flex align-items-stretch";
-          card.innerHTML = `
-                <div class="card rounded-0 m-1 border-0 bg-white">
-                  <div class="img-container">${
-                    img
-                      ? `<img src="${img}" class="card-img-top rounded-0" alt="...">`
-                      : ""
-                  }
-                  </div>    
-                  <div class="card-body p-2">
-                    <a href="${link}" class="h6 headlines link-dark link-offset-1 link-offset-1-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover" target="_blank">${headline}</a>
-                    <p class="card-subtitle text-body-secondary py-2" style="font-size: small;">${pubDate}</p>
-                  </div>
-                  <div class="card-footer py-1 bg-white rounded-0" style="border:none; border-bottom: 1px solid ${
-                    feed.color || feedColor
-                  };">
-                      <div class="px-3 fw-light position-absolute bottom-0 end-0" style="font-size: small; background: ${
-                        feed.color || feedColor
-                      }; color: ${getBestTextColor(feed.color || feedColor)};">
-                        ${feed.title}
-                      </div>
-                  </div>
-                </div>
-            `;
-          feedCards.push({
-            card: card,
-            title: feed.title,
-            category: feed.category,
-            pubDate: new Date(item.pubDate),
-            relativeTime: classifyDate(new Date(), item.pubDate),
-            link: link,
-          });
+          feedCards.push(card);
         });
       } catch (error) {
         console.log(error);
@@ -485,7 +507,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const rssWebsite = data.feed.link;
 
     if (rssUrl) {
-      const rssUrls = loadRSSUrls();
+      const rssUrls = await loadRSSUrls();
       console.log(rssUrls);
       if (!rssUrls.some((rss) => rss.url === rssUrl)) {
         const title = rsstitle;

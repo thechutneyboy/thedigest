@@ -118,3 +118,29 @@ function getBestTextColor(bgColor) {
   // Determine contrast
   return luminance(r, g, b) > 0.5 ? "#000000" : "#FFFFFF"; // Black text if light background, white text if dark background
 }
+
+function exportOPML(feeds, filename = "subscriptions.opml") {
+  const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`;
+  const opmlStart = `<opml version="2.0"><head><title>RSS Feeds</title></head><body>`;
+  const opmlEnd = `</body></opml>`;
+
+  // Generate OPML outline entries
+  const outlines = feeds
+    .map(
+      (feed) =>
+        `<outline type="rss" text="${feed.title}" title="${feed.title}" xmlUrl="${feed.url}" htmlUrl="${feed.link}" />`
+    )
+    .join("\n");
+
+  // Combine all parts into a full OPML string
+  const opmlContent = `${xmlHeader}\n${opmlStart}\n${outlines}\n${opmlEnd}`;
+
+  // Create a Blob and trigger download
+  const blob = new Blob([opmlContent], { type: "text/xml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
